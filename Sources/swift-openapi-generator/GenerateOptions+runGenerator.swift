@@ -64,6 +64,7 @@ extension _GenerateOptions {
         do {
             try await _Tool.runGenerator(
                 doc: doc,
+                components: components,
                 configs: configs,
                 pluginSource: pluginSource,
                 outputDirectory: outputDirectory,

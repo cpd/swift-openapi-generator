@@ -21,6 +21,8 @@ struct _GenerateOptions: ParsableArguments {
 
     @Argument(help: "Path to the OpenAPI document, either in YAML or JSON.") var docPath: URL
 
+    @Option(help: "Path to components file") var components: URL?
+    
     @Option(help: "Path to a YAML configuration file.") var config: URL?
 
     @Option(

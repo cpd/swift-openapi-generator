@@ -21,6 +21,7 @@ import struct Foundation.Data
 import class Foundation.FileManager
 import ArgumentParser
 import _OpenAPIGeneratorCore
+import Foundation
 
 extension _Tool {
     /// Runs the generator with the specified configuration values.
@@ -37,6 +38,7 @@ extension _Tool {
     ///  running the generator for each configuration, or handling diagnostics.
     static func runGenerator(
         doc: URL,
+        components: URL?,
         configs: [Config],
         pluginSource: PluginSource?,
         outputDirectory: URL,
@@ -44,7 +46,9 @@ extension _Tool {
         diagnostics: any DiagnosticCollector & Sendable
     ) async throws {
         let docData: Data
-        do { docData = try Data(contentsOf: doc) } catch {
+        do {
+            docData = try ComponentsUtils.insertComponents(docURL: doc, componentsURL: components)
+        } catch {
             throw ValidationError("Failed to load the OpenAPI document at path \(doc.path), error: \(error)")
         }
 

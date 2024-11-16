@@ -12,12 +12,15 @@
 //
 //===----------------------------------------------------------------------===//
 import PackagePlugin
+import Foundation
 
 enum PluginUtils {
     private static var supportedConfigFiles: Set<String> {
         Set(["yaml", "yml"].map { "openapi-generator-config." + $0 })
     }
     private static var supportedDocFiles: Set<String> { Set(["yaml", "yml", "json"].map { "openapi." + $0 }) }
+    private static var supportedComponentsFiles: Set<String> { Set(["yaml", "yml", "json"].map { "components." + $0 }) }
+
 
     /// Validated values to run a plugin with.
     struct ValidatedInputs {
@@ -36,13 +39,13 @@ enum PluginUtils {
         targetName: String,
         pluginSource: PluginSource
     ) throws -> ValidatedInputs {
-        let (config, doc) = try findFiles(inputFiles: sourceFiles, targetName: targetName)
+        let (config, components, doc) = try findFiles(inputFiles: sourceFiles, targetName: targetName)
         let genSourcesDir = workingDirectory.appending("GeneratedSources")
 
         let arguments = [
-            "generate", "\(doc)", "--config", "\(config)", "--output-directory", "\(genSourcesDir)", "--plugin-source",
+            "generate", "\(doc)", components != nil ? "--components" : nil, components != nil ? "\(components!)" : nil, "--config", "\(config)", "--output-directory", "\(genSourcesDir)", "--plugin-source",
             "\(pluginSource.rawValue)",
-        ]
+        ].compactMap(\.self)
 
         let tool = try tool("swift-openapi-generator")
 
@@ -51,14 +54,14 @@ enum PluginUtils {
 
     /// Finds the OpenAPI config and document files or throws an error including both possible
     /// previous errors from the process of finding the config and document files.
-    private static func findFiles(inputFiles: FileList, targetName: String) throws -> (config: Path, doc: Path) {
-        let config = findConfig(inputFiles: inputFiles, targetName: targetName)
-        let doc = findDocument(inputFiles: inputFiles, targetName: targetName)
-        switch (config, doc) {
-        case (.failure(let error1), .failure(let error2)): throw PluginError.fileErrors([error1, error2])
-        case (_, .failure(let error)): throw PluginError.fileErrors([error])
-        case (.failure(let error), _): throw PluginError.fileErrors([error])
-        case (.success(let config), .success(let doc)): return (config, doc)
+    private static func findFiles(inputFiles: FileList, targetName: String) throws -> (config: Path, components: Path?, doc: Path) {
+        do {
+            let config = try findConfig(inputFiles: inputFiles, targetName: targetName).get()
+            let components = try findComponents(inputFiles: inputFiles, targetName: targetName).get()
+            let doc = try findDocument(inputFiles: inputFiles, targetName: targetName).get()
+            return (config, components, doc)
+        } catch {
+            throw PluginError.fileErrors([error])
         }
     }
 
@@ -79,6 +82,20 @@ enum PluginUtils {
     /// Find the document file.
     private static func findDocument(inputFiles: FileList, targetName: String) -> Result<Path, FileError> {
         let matchedDocs = inputFiles.filter { supportedDocFiles.contains($0.path.lastComponent) }.map(\.path)
+        guard matchedDocs.count > 0 else {
+            return .failure(FileError(targetName: targetName, fileKind: .document, issue: .noFilesFound))
+        }
+        guard matchedDocs.count == 1 else {
+            return .failure(
+                FileError(targetName: targetName, fileKind: .document, issue: .multipleFilesFound(files: matchedDocs))
+            )
+        }
+        return .success(matchedDocs[0])
+    }
+    
+    /// Find the document file.
+    private static func findComponents(inputFiles: FileList, targetName: String) -> Result<Path?, FileError> {
+        let matchedDocs = inputFiles.filter { supportedComponentsFiles.contains($0.path.lastComponent) }.map(\.path)
         guard matchedDocs.count > 0 else {
             return .failure(FileError(targetName: targetName, fileKind: .document, issue: .noFilesFound))
         }
