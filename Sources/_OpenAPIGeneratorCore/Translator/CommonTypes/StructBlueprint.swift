@@ -12,6 +12,7 @@
 //
 //===----------------------------------------------------------------------===//
 import OpenAPIKit
+import Foundation
 
 /// A structure that contains the information about an OpenAPI object that is
 /// required to generate a matching Swift structure.
@@ -153,7 +154,7 @@ struct PropertyBlueprint {
 extension PropertyBlueprint {
 
     /// A name that is verified to be a valid Swift identifier.
-    var swiftSafeName: String { context.asSwiftSafeName(originalName) }
+    var swiftSafeName: String { context.safeNameGenerator.swiftMemberName(for: originalName) }
 
     /// The JSON path to the property.
     ///

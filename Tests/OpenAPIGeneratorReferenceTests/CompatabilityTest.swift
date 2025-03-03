@@ -254,7 +254,7 @@ fileprivate extension CompatibilityTest {
                 for mode in GeneratorMode.allCases {
                     group.addTask {
                         let generator = makeGeneratorPipeline(
-                            config: Config(mode: mode, access: .public),
+                            config: Config(mode: mode, access: .public, namingStrategy: .defensive),
                             diagnostics: diagnosticsCollector
                         )
                         return try assertNoThrowWithValue(generator.run(input))
@@ -265,7 +265,7 @@ fileprivate extension CompatibilityTest {
         } else {
             outputs = try GeneratorMode.allCases.map { mode in
                 let generator = makeGeneratorPipeline(
-                    config: Config(mode: mode, access: .public),
+                    config: Config(mode: mode, access: .public, namingStrategy: .defensive),
                     diagnostics: diagnosticsCollector
                 )
                 return try assertNoThrowWithValue(generator.run(input))
@@ -292,7 +292,7 @@ fileprivate extension CompatibilityTest {
                 let package = Package(
                     name: "\(packageName)",
                     platforms: [.macOS(.v13)],
-                    dependencies: [.package(url: "https://github.com/apple/swift-openapi-runtime", from: "1.0.0")],
+                    dependencies: [.package(url: "https://github.com/apple/swift-openapi-runtime", from: "1.7.0")],
                     targets: [.target(name: "Harness", dependencies: [.product(name: "OpenAPIRuntime", package: "swift-openapi-runtime")])]
                 )
                 """
